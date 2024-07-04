@@ -8,25 +8,38 @@ server.Start();
 while (true)
 {
     var client = server.AcceptTcpClient();
-    var data = client.GetStream();
+    _ = HandleClient(client);
+}
 
-    var buffer = new byte[1024];
-    var bytesRead = data.Read(buffer, 0, buffer.Length);
+static async Task HandleClient(TcpClient client)
+{
+    try
+    {
+        using var data = client.GetStream();
+        var buffer = new byte[1024];
+        var bytesRead = await data.ReadAsync(buffer);
 
-    var request = Encoding.UTF8.GetString(buffer);
+        var request = Encoding.UTF8.GetString(buffer);
 
-    Console.WriteLine(request);
-    
-    var response =
-        "HTTP/1.1 200 OK\r\n" +
-        "Content-Type: text/plain\r\n" +
-        "Content-Length: " + bytesRead + "\r\n" +
-        "\r\n" + request;
+        Console.WriteLine(request);
 
-    var message = Encoding.UTF8.GetBytes(response);
+        var response =
+            "HTTP/1.1 200 OK\r\n" +
+            "Content-Type: text/plain\r\n" +
+            "Content-Length: " + bytesRead + "\r\n" +
+            "\r\n" + request;
 
-    data.Write(message);
+        var message = Encoding.UTF8.GetBytes(response);
 
-    client.Close();
+        await data.WriteAsync(message);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine(ex.Message);
+    }
+    finally
+    {
+        client.Close();
+    }
 }
 
